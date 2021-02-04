@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd">
+	<!--    自动扫描-->
+	<context:component-scan base-package="org.jeecg">
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+	</context:component-scan>
+	<!--  加载jdbc文件-->
+	<context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true"/>
+	<!--   配置数据库 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"  destroy-method="close">
+		<property name="driverClass" value="${jdbc.driverClass}"/>
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="checkoutTimeout" value="${cpool.checkoutTimeout}" />
+		<property name="minPoolSize" value="${cpool.minPoolSize}" />
+		<property name="maxPoolSize" value="${cpool.maxPoolSize}"/>
+		<property name="maxIdleTime" value="${cpool.maxIdleTime}"/>
+		<property name="maxIdleTimeExcessConnections" value="${cpool.maxIdleTimeExcessConnections}" />
+		<property name="acquireIncrement" value="${cpool.acquireIncrement}" />
+	</bean>
+	<!--   配置语言包，因达activiti不支持达梦数据库，因达梦数据库仿照Oracle数据库，故用oracle语言包-->
+	<bean id="sessionFactory2" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<value>
+				hibernate.dialect=org.hibernate.dialect.Oracle8iDialect
+			</value>
+		</property>
+	</bean>
+	<!--  事务配置  -->
+	<bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="sessionFactory" ref="sessionFactory2"/>
+	</bean>
+	<!--  activiti配置  -->
+	<bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
+		<property name="dataSource" ref="dataSource" />
+<!--		<property name="jobExecutorActivate" value="false" />-->
+		<!-- 如果数据库没有表时请将false改成true -->
+		<property name="databaseSchemaUpdate" value="false"/>
+		<property name="transactionManager" ref="transactionManager"/>
+		<!--  将类型设置为oracle-->
+		<property name="databaseType" value="oracle"/>
+		<property name="dbIdentityUsed" value="false" />
+		<property name="history" value="full" />
+	</bean>
+</beans>
